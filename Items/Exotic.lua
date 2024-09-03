@@ -52,6 +52,7 @@ local gateway_sprite = {
 }
 local iterum = {
     object_type = "Joker",
+    order = 1000001,
 	name = "cry-Iterum",
 	key = "iterum",
 	config = {extra = {x_mult = 2, repetitions = 1}},
@@ -122,6 +123,7 @@ if JokerDisplay then
 end
 local universum = {
     object_type = "Joker",
+    order = 1000002,
 	name = "cry-Universum",
 	key = "universum",
 	config = {extra = 2},
@@ -150,6 +152,7 @@ local universum = {
 }
 local exponentia = {
     object_type = "Joker",
+    order = 1000003,
 	name = "cry-Exponentia",
 	key = "exponentia",
 	config = {extra = {Emult = 1, Emult_mod = 0.01}},
@@ -206,6 +209,7 @@ if JokerDisplay then
 end
 local speculo = {
     object_type = "Joker",
+    order = 1000004,
 	name = "cry-Speculo",
 	key = "speculo",
 	pos = {x = 3, y = 1},
@@ -251,6 +255,7 @@ local speculo = {
 local redeo = {
     object_type = "Joker",
 	name = "cry-Redeo",
+    order = 1000005,
 	key = "redeo",
     config = {extra = {ante_reduction = 1, money_req = 10, money_remaining = 0, money_mod = 10}},
     loc_vars = function(self, info_queue, center)
@@ -301,6 +306,7 @@ end
 local tenebris = {
 	object_type = "Joker",
 	name = "cry-Tenebris",
+    order = 1000006,
 	key = "tenebris",
 	pos = {x = 3, y = 2},
 	soul_pos = {x = 4, y = 2, extra = {x = 5, y = 2}},
@@ -345,6 +351,7 @@ if JokerDisplay then
 end
 local effarcire = {
     object_type = "Joker",
+    order = 1000007,
 	name = "cry-Effarcire",
 	key = "effarcire",
 	config = {},
@@ -381,6 +388,7 @@ local effarcire_sprite = {
 }
 local crustulum = {
 	object_type = "Joker",
+    order = 1000008,
 	name = "cry-crustulum",
 	key = "crustulum",
 	config = {extra = {chips = 0, chip_mod = 4,}},
@@ -432,6 +440,7 @@ end
 --todo: make the Emult always prime
 local primus = {
     object_type = "Joker",
+    order = 1000009,
     name = "cry-primus",
     key = "primus",
     config = {extra = {Emult = 1.01, Emult_mod = 0.17}},
@@ -564,6 +573,7 @@ local big_num_whitelist = {
 local scalae = {
     object_type = "Joker",
     name = "cry-Scalae",
+    order = 1000010,
     key = "Scalae",
     pos = {x = 3, y = 4},
     soul_pos = {x = 5, y = 4, extra = {x = 4, y = 4}},
@@ -622,6 +632,7 @@ local scalae = {
 }
 local stella_mortis = {
     object_type = "Joker",
+    order = 1000011,
 	name = "cry-Stella Mortis",
 	key = "stella_mortis",
 	config = {extra = {Emult = 1, Emult_mod = 0.4}},
@@ -700,6 +711,7 @@ if JokerDisplay then
 end
 local circulus_pistoris = {
     	object_type = "Joker",
+        order = 1000012,
 	name = "cry-Circulus Pistoris",
 	key = "circulus_pistoris",
     	config = {extra = {Emult =math.pi, Echips =math.pi, hands_remaining = 3}},
@@ -755,6 +767,7 @@ if JokerDisplay then
 end
 local aequilibrium = {
 	object_type = "Joker",
+    order = 1000013,
 	name = "Ace Aequilibrium", --WARNING!!!! if name is changed, the aeqactive function in Cryptid.lua's create_card must also be changed since it checks for this!
         key = 'equilib',
         loc_txt = {

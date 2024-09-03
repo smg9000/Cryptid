@@ -464,6 +464,7 @@ for i = 1, #typed_decks do
 end
 
 return {name = "Enhanced Decks", 
+		delay_init = true,
         init = function()
             local Backapply_to_runRef = Back.apply_to_run
             function Back.apply_to_run(self)

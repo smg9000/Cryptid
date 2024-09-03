@@ -1325,6 +1325,8 @@ for _, file in ipairs(files) do
         end
     end
 end
+Cryptid.init = {}
+Cryptid.obj_buffer = {}
 for _, file in ipairs(files) do
     print("Loading file "..file)
     local f, err = SMODS.load_file("Items/"..file)
@@ -1333,25 +1335,53 @@ for _, file in ipairs(files) do
       if curr_obj.name == "HTTPS Module" and Cryptid_config[curr_obj.name] == nil then Cryptid_config[curr_obj.name] = false end
       if Cryptid_config[curr_obj.name] == nil then Cryptid_config[curr_obj.name] = true end
       if Cryptid_config[curr_obj.name] then
-          if curr_obj.init then curr_obj:init() end
+          if curr_obj.init and curr_obj.delay_init then 
+            Cryptid.init[#Cryptid.init+1] = curr_obj.init
+          elseif curr_obj.init then
+            curr_obj:init()
+          end
           if not curr_obj.items then
             print("Warning: "..file.." has no items")
           else
             for _, item in ipairs(curr_obj.items) do
-                item.discovered = true
-                if SMODS[item.object_type] then
-                    SMODS[item.object_type](item)
-                    -- JokerDisplay mod support
-                    if JokerDisplay and item.joker_display_definition then
-                        JokerDisplay.Definitions[item.key] = item.joker_display_definition
-                    end
-                else
-                    print("Error loading item "..item.key.." of unknown type "..item.object_type)
+                if not Cryptid.obj_buffer[item.object_type] then
+                    Cryptid.obj_buffer[item.object_type] = {}
                 end
+                Cryptid.obj_buffer[item.object_type][#Cryptid.obj_buffer[item.object_type]+1] = item
             end
          end
       end
     end
+end
+for k, v in pairs(Cryptid.obj_buffer) do
+    --table.sort(v, function (a, b) return not a.order or not b.order or a.order < b.order end)
+    while #v > 0 do
+        local min_order = 1e308
+        local min_order_i = 0
+        for i = 1, #v do
+            local item = v[i]
+            if not item.order then item.order = 0 end
+            if item.order < min_order then
+                min_order = item.order
+                min_order_i = i
+            end
+        end
+        local item = v[min_order_i]
+        item.discovered = true
+        if SMODS[k] then
+            SMODS[k](item)
+            -- JokerDisplay mod support
+            if JokerDisplay and item.joker_display_definition then
+                JokerDisplay.Definitions[item.key] = item.joker_display_definition
+            end
+        else
+            print("Error loading item "..item.key.." of unknown type "..k)
+        end--]]
+        table.remove(v, min_order_i)
+    end
+end
+for i = 1, #Cryptid.init do
+    Cryptid.init[i]()
 end
 
 if not SpectralPack then

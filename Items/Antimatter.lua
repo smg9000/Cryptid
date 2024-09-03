@@ -10,7 +10,8 @@ local blank = {
             "{C:inactive,E:1}Does nothing?"
         }
     },
-    atlas = "blank"
+    atlas = "blank",
+    order = 1000000
 }
 local blank_sprite = {
     object_type = "Atlas",
@@ -122,7 +123,8 @@ local antimatter = {
             return args.chips, args.mult
         end
     end,
-    atlas = "antimatter"
+    atlas = "antimatter",
+    order = 1000001
 }
 local antimatter_sprite = {
     object_type = "Atlas",
