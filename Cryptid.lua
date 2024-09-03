@@ -12,6 +12,8 @@
 ----------------------------------------------
 ------------MOD CODE -------------------------
 
+Cryptid = {}
+
 local mod_path = ''..SMODS.current_mod.path
 -- Load Options
 Cryptid_config = SMODS.current_mod.config
@@ -1309,6 +1311,7 @@ function cry_with_deck_effects(card, func)
 end
 
 -- File loading based on Relic-Jokers
+Cryptid.enabled = {}
 local files = NFS.getDirectoryItems(mod_path.."Items")
 --for first boot, make sure config is defined properly beforehand
 for _, file in ipairs(files) do
@@ -1317,6 +1320,9 @@ for _, file in ipairs(files) do
         local curr_obj = f()
         if curr_obj.name == "HTTPS Module" and Cryptid_config[curr_obj.name] == nil then Cryptid_config[curr_obj.name] = false end
         if Cryptid_config[curr_obj.name] == nil then Cryptid_config[curr_obj.name] = true end
+        if Cryptid_config[curr_obj.name] then
+            Cryptid.enabled[curr_obj.name] = true
+        end
     end
 end
 for _, file in ipairs(files) do
@@ -1711,7 +1717,6 @@ function new_round()
 end
 
 --Redefine these here because they're always used
-if not Cryptid then Cryptid = {} end
 Cryptid.base_values = {}
 function cry_misprintize_tbl(name, tbl, clear, override, stack)
     if tbl then

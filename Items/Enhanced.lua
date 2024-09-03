@@ -70,7 +70,7 @@ local typed_decks = {
 	
 }
 
-if cry_minvasion then	-- Crashes the game if M jokers are disabled if we don't add this separately
+if Cryptid.enabled["M Jokers"] then	-- Crashes the game if M jokers are disabled if we don't add this separately
 	table.insert(typed_decks, 31, {'cry',			'Edition',		'Meck',						'Jolly',				'm',				nil,				nil,				5,		2,		''})
 end
 
