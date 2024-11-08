@@ -323,7 +323,7 @@ local crustulum = {
 	object_type = "Joker",
 	name = "cry-crustulum",
 	key = "crustulum",
-	config = { extra = { chips = 0, chip_mod = 4 } },
+	config = { extra = { chips = 69 } },
 	pos = { x = 0, y = 2 },
 	soul_pos = { x = 2, y = 2, extra = { x = 1, y = 2 } },
 	rarity = "cry_exotic",
@@ -333,48 +333,24 @@ local crustulum = {
 	blueprint_compat = true,
 	perishable_compat = false,
 	loc_vars = function(self, info_queue, center)
-		return { vars = { center.ability.extra.chips, center.ability.extra.chip_mod } }
+		return { vars = { center.ability.extra.chips } }
 	end,
-	calculate = function(self, card, context)
-		if context.reroll_shop and not context.blueprint then
-			card.ability.extra.chips = card.ability.extra.chips + card.ability.extra.chip_mod
-			card_eval_status_text(
-				card,
-				"extra",
-				nil,
-				nil,
-				nil,
-				{
-					message = localize({ type = "variable", key = "a_chips", vars = { card.ability.extra.chips } }),
-					colour = G.C.CHIPS,
-				}
-			)
-			return nil, true
+	click = function(self, card)
+		if card.added_to_deck and G.GAME and G.GAME.chips then
+			--todo sfx and particle effects
+			G.GAME.chips = to_big(G.GAME.chips) + card.ability.extra.chips
+			if G.GAME.blind and G.GAME.blind.in_blind and to_big(G.GAME.blind.chips) <= to_big(G.GAME.chips) and G.STATE == G.STATES.SELECTING_HAND then
+				G.STATE = G.STATES.HAND_PLAYED
+				G.STATE_COMPLETE = true
+				end_round()
+				G.GAME.blind.in_blind = false
+			end
 		end
-		if
-			context.cardarea == G.jokers
-			and to_big(card.ability.extra.chips) > to_big(0)
-			and not context.before
-			and not context.after
-		then
-			return {
-				message = localize({ type = "variable", key = "a_chips", vars = { card.ability.extra.chips } }),
-				chip_mod = card.ability.extra.chips,
-			}
-		end
-	end,
-	add_to_deck = function(self, card, from_debuff)
-		--This makes the reroll immediately after obtaining free because the game doesn't do that for some reason
-		G.GAME.current_round.free_rerolls = G.GAME.current_round.free_rerolls + 1
-		calculate_reroll_cost(true)
-	end,
-	remove_from_deck = function(self, card, from_debuff)
-		calculate_reroll_cost(true)
 	end,
 	cry_credits = {
-		idea = {"AlexZGreat"},
-		art = {"Jevonn"},
-		code = {"Jevonn"}
+		idea = {"HexaCryonic"},
+		art = {"lolxddj"},
+		code = {"Math"}
 	},
 }
 --todo: make the Emult always prime
@@ -1385,6 +1361,14 @@ return {
 			ed(mod, x)
 			for i = 1, #G.jokers.cards do
 				local effects = G.jokers.cards[i]:calculate_joker({ cry_ease_dollars = mod })
+			end
+		end
+
+		local cc = Card.click
+		function Card:click()
+			cc(self)
+			if self.config.center and type(self.config.center.click) == "function" then
+				self.config.center:click(self)
 			end
 		end
 	end,

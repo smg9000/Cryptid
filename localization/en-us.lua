@@ -851,10 +851,9 @@ return {
             j_cry_crustulum = {
                 name = "Crustulum",
                 text = {
-                    "This Joker gains {C:chips}+#2#{} Chips",
-                    "per {C:attention}reroll{} in the shop",
-                    "{C:green}All rerolls are free{}",
-                    "{C:inactive}(Currently {C:chips}+#1#{C:inactive} chips)",
+                    "Gives {C:chips}+#1#{} Chips when clicked",
+                    "Unlocks {C:attention}passive{} upgrades",
+                    "{C:inactive}(see Run Info){}"
                 },
             },
             j_cry_cryptidmoment = {
