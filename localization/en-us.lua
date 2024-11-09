@@ -851,7 +851,7 @@ return {
             j_cry_crustulum = {
                 name = "Crustulum",
                 text = {
-                    "Gives {C:chips}+#1#{} Chips when clicked",
+                    "Adds {C:attention}+#1#{} to score when clicked",
                     "Unlocks {C:attention}passive{} upgrades",
                     "{C:inactive}(see Run Info){}"
                 },
