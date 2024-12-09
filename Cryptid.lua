@@ -2618,12 +2618,25 @@ function init_localization()
 end
 
 --Will be moved to D20 file when that gets added
-function roll_dice(seed, min, max, config)
+function roll_dice(seed, min, max, config, upperbound, lowerbound)
 	local val
 	while not val or (config and config.ignore_value == val) do
 		val = pseudorandom(seed, min, max)
 	end
-	return val
+	local criticalhit
+	local criticalmiss
+	if val => upperbound then
+	    criticalhit = true
+	elseif val <= lowerbound then
+	    criticalmiss = true
+	else criticalhit = false criticalmiss = false
+	end
+	    
+	return {
+	    val,
+	    criticalhit,
+	    criticalmiss,
+	    }
 end
 
 function SMODS.current_mod.reset_game_globals(run_start)
