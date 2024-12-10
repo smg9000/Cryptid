@@ -2618,24 +2618,24 @@ function init_localization()
 end
 
 --Will be moved to D20 file when that gets added
-function roll_dice(seed, min, max, config, upperbound, lowerbound)
+function roll_dice(seed, max, config, )
 	local val
 	while not val or (config and config.ignore_value == val) do
-		val = pseudorandom(seed, min, max)
+		val = pseudorandom(seed, 1, max)
 	end
-	local criticalhit
-	local criticalmiss
-	if val => upperbound then
-	    criticalhit = true
-	elseif val <= lowerbound then
-	    criticalmiss = true
-	else criticalhit = false criticalmiss = false
+	local hit
+	local miss
+	if val => max then
+	    hit = true
+	elseif val <= 1 then
+	    miss = true
+	else hit = false miss = false
 	end
 	    
 	return {
 	    val,
-	    criticalhit,
-	    criticalmiss,
+	    hit,
+	    miss,
 	    }
 end
 
