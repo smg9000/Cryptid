@@ -28,6 +28,9 @@ local gateway = {
 				delay = 0.75,
 				func = function()
 					for k, v in pairs(deletable_jokers) do
+						if v.config.center.rarity == "cry_exotic" then
+							check_for_unlock({ type = "what_have_you_done" })
+						end
 						v:start_dissolve(nil, _first_dissolve)
 						_first_dissolve = true
 					end
@@ -63,14 +66,14 @@ local iterum = {
 	atlas = "atlasexotic",
 	soul_pos = { x = 1, y = 1, extra = { x = 2, y = 1 } },
 	loc_vars = function(self, info_queue, center)
-		return { vars = { center.ability.extra.x_mult, center.ability.extra.repetitions } }
+		return { vars = { center.ability.extra.x_mult, math.min(40, center.ability.extra.repetitions) } }
 	end,
 	calculate = function(self, card, context)
 		if context.repetition then
 			if context.cardarea == G.play then
 				return {
 					message = localize("k_again_ex"),
-					repetitions = card.ability.extra.repetitions,
+					repetitions = math.min(40, card.ability.extra.repetitions),
 					card = card,
 				}
 			end
@@ -696,7 +699,7 @@ local aequilibrium = {
 	config = { extra = { jokers = 2, card = nil } },
 	rarity = "cry_exotic",
 	pos = { x = 7, y = 0 },
-	soul_pos = { x = 69, y = 0, extra = { x = 8, y = 0 } },
+	soul_pos = { x = 6, y = 0, extra = { x = 8, y = 0 } },
 	atlas = "atlasexotic",
 	cost = 50,
 	order = 512,
@@ -729,6 +732,7 @@ local aequilibrium = {
 			return nil, true
 		end
 	end,
+	--[[
 	add_to_deck = function(self, card, from_debuff)
 		if not from_debuff then
 			if card.ability.extra.card then
@@ -798,6 +802,7 @@ local aequilibrium = {
 			card.ability.extra.card:start_dissolve()
 		end
 	end,
+	]]--
 	cry_credits = {
 		idea = {"Elial2"},
 		art = {"Elial2"},
@@ -897,6 +902,28 @@ local gemino = {
 	cost = 50,
 	order = 515,
 	atlas = "atlasexotic",
+	loc_vars = function(self, info_queue, card)
+		card.ability.blueprint_compat_ui = card.ability.blueprint_compat_ui or ''; card.ability.blueprint_compat_check = nil
+		return {
+			main_end = (card.area and card.area == G.jokers) and {
+        			{n=G.UIT.C, config={align = "bm", minh = 0.4}, nodes={
+            				{n=G.UIT.C, config={ref_table = card, align = "m", colour = G.C.JOKER_GREY, r = 0.05, padding = 0.06, func = 'blueprint_compat'}, nodes={
+                			{n=G.UIT.T, config={ref_table = card.ability, ref_value = 'blueprint_compat_ui',colour = G.C.UI.TEXT_LIGHT, scale = 0.32*0.8}},
+            				}}
+        			}}
+    			} or nil
+		}
+	end,
+	update = function(self, card, front)
+		if G.STAGE == G.STAGES.RUN then
+			other_joker = G.jokers.cards[1]
+			if other_joker and other_joker ~= card and not (Card.no(other_joker, "immutable", true)) then
+                		card.ability.blueprint_compat = 'compatible'
+            		else
+               			card.ability.blueprint_compat = 'incompatible'
+            		end
+		end
+	end,
 	calculate = function(self, card2, context)
 		if context.end_of_round and not context.repetition and not context.individual then
 			local check = false

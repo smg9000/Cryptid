@@ -350,36 +350,55 @@ local whip = {
 	end,
 	calculate = function(self, card, context)
 		if context.cardarea == G.jokers and context.before and not context.blueprint then
+			local two = false
+			local seven = false
+			local twosuits = {}
+			local sevensuits = {}
 			for i = 1, #context.full_hand do
-				if SMODS.Ranks[context.full_hand[i].base.value].key == "2" then
-					for j = 1, #context.full_hand do
-						if SMODS.Ranks[context.full_hand[j].base.value].key == "7" then
-							--Different suits
-							for k, v in pairs(SMODS.Suits) do
-								if
-									context.full_hand[i]:is_suit(k, nil, true)
-									and context.full_hand[j]:is_suit(k, nil, true)
-								then
-									return
+				if context.full_hand[i]:get_id() == 2 or context.full_hand[i]:get_id() == 7 then
+					if context.full_hand[i]:get_id() == 2 then
+						if not two then two = true end
+						for k, v in pairs(SMODS.Suits) do
+							if context.full_hand[i]:is_suit(k, nil, true) then
+								local contained = false
+								for i = 1, #twosuits do
+									if k == twosuits[i] then contained = true end
 								end
+								if not contained then twosuits[#twosuits + 1] = k end
 							end
-							card.ability.extra.x_mult = card.ability.extra.x_mult + card.ability.extra.Xmult_mod
-							card_eval_status_text(
-								card,
-								"extra",
-								nil,
-								nil,
-								nil,
-								{
-									message = localize({
-										type = "variable",
-										key = "a_xmult",
-										vars = { card.ability.extra.x_mult },
-									}),
-								}
-							)
-							return nil, true
 						end
+					else
+						if not seven then seven = true end
+						for k, v in pairs(SMODS.Suits) do
+							if context.full_hand[i]:is_suit(k, nil, true) then
+								local contained = false
+								for i = 1, #sevensuits do
+									if k == sevensuits[i] then contained = true end
+								end
+								if not contained then sevensuits[#sevensuits + 1] = k end
+							end
+						end
+					end
+				end
+				if two and seven then
+					if (#twosuits > 1 or #sevensuits > 1)
+					or (#twosuits == 1 and #sevensuits == 1 and twosuits[1] ~= sevensuits[1]) then
+						card.ability.extra.x_mult = card.ability.extra.x_mult + card.ability.extra.Xmult_mod
+						card_eval_status_text(
+							card,
+							"extra",
+							nil,
+							nil,
+							nil,
+							{
+								message = localize({
+								type = "variable",
+								key = "a_xmult",
+								vars = { card.ability.extra.x_mult },
+								}),
+							}
+						)
+						return nil, true
 					end
 				end
 			end
@@ -992,29 +1011,23 @@ local seal_the_deal = {
 	immutable = true,
 	atlas = "atlasone",
 	calculate = function(self, card, context)
-		if context.individual and context.cardarea == G.play and not context.blueprint and not context.retrigger_joker then
-			if G.GAME.current_round.hands_left == 0 and not context.other_card.seal then
-				G.E_MANAGER:add_event(Event({
-					func = function()
-						local seal_type = pseudorandom(pseudoseed("seal_the_deal"))
-						if seal_type > 0.75 then
-							context.other_card:set_seal("Red", true)
-						elseif seal_type > 0.5 then
-							context.other_card:set_seal("Blue", true)
-						elseif seal_type > 0.25 then
-							context.other_card:set_seal("Gold", true)
-						else
-							context.other_card:set_seal("Purple", true)
+		if context.after and G.GAME.current_round.hands_left == 0 and not context.blueprint and not context.retrigger_joker then
+			G.E_MANAGER:add_event(Event({
+				trigger = 'before', 
+				delay = 1.3,
+				func = function()	-- i can't figure out how to split these events without making em look bad so you get this?
+					for j = 1, #context.scoring_hand do
+						if not context.scoring_hand[j].seal then
+							context.scoring_hand[j]:set_seal(SMODS.poll_seal({guaranteed = true, type_key = 'sealthedeal'}), true, false)
+							context.scoring_hand[j]:juice_up()
 						end
-						card:juice_up(0.3, 0.4)
-						context.other_card:juice_up(0.3, 0.3)
-						play_sound("gold_seal", 1.2, 0.4)
-						return true
-					end,
-				}))
-				delay(0.5)
-				return nil, true
-			end
+					end
+					play_sound('gold_seal', 1.2, 0.4)
+					card:juice_up()
+					return true
+				end,
+			}))
+			return nil, true
 		end
 	end,
 	set_ability = function(self, card, initial, delay_sprites)
@@ -1022,18 +1035,20 @@ local seal_the_deal = {
 		if Cryptid.enabled["Misc."] then sealtable[#sealtable + 1] = "azure" end
 		if Cryptid.enabled["Code Cards"] then sealtable[#sealtable + 1] = "green" end
 		card.ability.extra = pseudorandom_element(sealtable, pseudoseed('abc'))
-		--Gold (ULTRA RARE!!!!!!!!)
-		if pseudorandom('xyz') <= 0.000001 and not (card.area and card.area.config.collection) then
-			card.children.center:set_sprite_pos({x = 6, y = 4})
-		--Others
-		elseif card.ability.extra == "red" then
-			card.children.center:set_sprite_pos({x = 6, y = 0})
-		elseif card.ability.extra == "azure" then
-			card.children.center:set_sprite_pos({x = 6, y = 2})
-		elseif card.ability.extra == "purple" then
-			card.children.center:set_sprite_pos({x = 6, y = 3})
-		elseif card.ability.extra == "green" then
-			card.children.center:set_sprite_pos({x = 6, y = 1})
+		if G.P_CENTERS["j_cry_seal_the_deal"].discovered then
+			--Gold (ULTRA RARE!!!!!!!!)
+			if pseudorandom('xyz') <= 0.000001 and not (card.area and card.area.config.collection) then
+				card.children.center:set_sprite_pos({x = 6, y = 4})
+			--Others
+			elseif card.ability.extra == "red" then
+				card.children.center:set_sprite_pos({x = 6, y = 0})
+			elseif card.ability.extra == "azure" then
+				card.children.center:set_sprite_pos({x = 6, y = 2})
+			elseif card.ability.extra == "purple" then
+				card.children.center:set_sprite_pos({x = 6, y = 3})
+			elseif card.ability.extra == "green" then
+				card.children.center:set_sprite_pos({x = 6, y = 1})
+			end
 		end
 	end,
 	cry_credits = {
@@ -1082,7 +1097,7 @@ local chad = {
 			"Jevonn"
 		},
 		art = {
-			"SDM0"
+			"SDM_0"
 		},
 		code = {
 			"Math"
@@ -5345,17 +5360,40 @@ local oldblueprint = {
 	pos = { x = 2, y = 1 },
 	config = { extra = { odds = 4 } },
 	rarity = 1,
+	immutable = true, -- No cheesing self destruct chance :)
 	cost = 6,
 	order = 83,
-	loc_vars = function(self, info_queue, center)
-		return { vars = { "" .. (G.GAME and G.GAME.probabilities.normal or 1), center.ability.extra.odds } }
+	update = function(self, card, front)
+		if G.STAGE == G.STAGES.RUN then
+			for i = 1, #G.jokers.cards do
+                    		if G.jokers.cards[i] == card then other_joker = G.jokers.cards[i+1] end
+                	end
+			if other_joker and other_joker ~= card and other_joker.config.center.blueprint_compat then
+                		card.ability.blueprint_compat = 'compatible'
+            		else
+               			card.ability.blueprint_compat = 'incompatible'
+            		end
+		end
+	end,
+	loc_vars = function(self, info_queue, card)
+		card.ability.blueprint_compat_ui = card.ability.blueprint_compat_ui or ''; card.ability.blueprint_compat_check = nil
+		return { 
+			vars = { "" .. (G.GAME and G.GAME.probabilities.normal or 1), card.ability.extra.odds },
+			main_end = (card.area and card.area == G.jokers) and {
+        			{n=G.UIT.C, config={align = "bm", minh = 0.4}, nodes={
+            				{n=G.UIT.C, config={ref_table = card, align = "m", colour = G.C.JOKER_GREY, r = 0.05, padding = 0.06, func = 'blueprint_compat'}, nodes={
+                			{n=G.UIT.T, config={ref_table = card.ability, ref_value = 'blueprint_compat_ui',colour = G.C.UI.TEXT_LIGHT, scale = 0.32*0.8}},
+            				}}
+        			}}
+    			} or nil
+		}
 	end,
 	blueprint_compat = true,
 	eternal_compat = false,
 	atlas = "atlasthree",
 	calculate = function(self, card, context)
 		if
-			context.end_of_round
+			context.end_of_round2
 			and not context.individual
 			and not context.repetition
 			and not context.blueprint
@@ -5384,15 +5422,23 @@ local oldblueprint = {
 						return true
 					end,
 				}))
-				return {
-					message = { localize("k_extinct_ex") },
-					colour = G.C.FILTER,
-				}
+				card_eval_status_text(
+					card,
+					"extra",
+					nil,
+					nil,
+					nil,
+					{ message = localize("k_extinct_ex"), colour = G.C.FILTER }
+				)
 			else
-				return {
-					message = { localize("k_safe_ex") },
-					colour = G.C.FILTER,
-				}
+				card_eval_status_text(
+					card,
+					"extra",
+					nil,
+					nil,
+					nil,
+					{ message = localize("k_safe_ex"), colour = G.C.FILTER }
+				)
 			end
 		end
 		local other_joker = nil
@@ -5401,7 +5447,7 @@ local oldblueprint = {
 				other_joker = G.jokers.cards[i + 1]
 			end
 		end
-		if other_joker and other_joker ~= self then
+		if other_joker and other_joker ~= card then
 			context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
 			context.blueprint_card = context.blueprint_card or card
 
@@ -5608,13 +5654,13 @@ local translucent = {
 	end,
 	cry_credits = {
 		idea = {
-			"SDM0"
+			"SDM_0"
 		},
 		art = {
-			"SDM0"
+			"SDM_0"
 		},
 		code = {
-			"SDM0"
+			"SDM_0"
 		}
 	},
 }
@@ -6198,14 +6244,14 @@ local exposed = {
 		return { vars = { center.ability.extra } }
 	end,
 	update = function(self, card, dt)
-		if G.deck and not (card.area and card.area.config.collection) then
+		if G.deck and card.added_to_deck then
 			for i, v in pairs (G.deck.cards) do
 				if v:is_face() then
 					v:set_debuff(true)
 				end
 			end
 		end
-		if G.hand and not (card.area and card.area.config.collection) then
+		if G.hand and card.added_to_deck then
 			for i, v in pairs (G.hand.cards) do
 				if v:is_face() then
 					v:set_debuff(true)
@@ -6240,14 +6286,14 @@ local mask = {
 		return { vars = { center.ability.extra } }
 	end,
 	update = function(self, card, dt)
-		if G.deck and not (card.area and card.area.config.collection) then
+		if G.deck and card.added_to_deck then
 			for i, v in pairs (G.deck.cards) do
 				if not v:is_face() then
 					v:set_debuff(true)
 				end
 			end
 		end
-		if G.hand and not (card.area and card.area.config.collection) then
+		if G.hand and card.added_to_deck then
 			for i, v in pairs (G.hand.cards) do
 				if not v:is_face() then
 					v:set_debuff(true)
@@ -6305,6 +6351,161 @@ local tropical_smoothie = {
 		end
 	end,
 }
+local pumpkin = {
+	object_type = "Joker",
+	key = "pumpkin",
+	pos = { x = 0, y = 6 },
+	rarity = 3,
+	cost = 10,
+	atlas = "atlastwo",
+	order = 131,
+	config = {extra = {scoreReq = 50, enabled = true}},
+	blueprint_compat = true,
+	eternal_compat = false,
+	perishable_compat = false,
+	loc_vars = function(self, info_queue, center)
+		return { vars = { center.ability.extra.scoreReq} }
+	end,
+	calculate = function(self, card, context)
+		if context.game_over and G.GAME.chips/G.GAME.blind.chips >= to_big(card.ability.extra.scoreReq/100) then
+			G.E_MANAGER:add_event(Event({
+				func = function()
+					G.hand_text_area.blind_chips:juice_up()
+					G.hand_text_area.game_chips:juice_up()
+					play_sound('tarot1')
+					return true
+				end
+			})) 
+			return {
+				message = localize('k_saved_ex'),
+				saved = true,
+				colour = G.C.RED
+			}
+		end
+
+		if context.selling_self then
+			card.ability.extra.enabled = false
+		end
+
+		if context.cry_start_dissolving and context.card == card and card.ability.extra.enabled == true then
+			local newcard = create_card(
+				"Joker",
+				G.jokers,
+				nil,
+				nil,
+				nil,
+				nil,
+				'j_cry_carved_pumpkin'
+			)
+			newcard:add_to_deck()
+			G.jokers:emplace(newcard)
+		end
+	end,
+	cry_credits = {
+		idea = {
+			"Squiddy"
+		},
+		art = {
+			"B"
+		},
+		code = {
+			"wawa person"
+		}
+	},
+}
+local carved_pumpkin = {
+	object_type = "Joker",
+	key = "carved_pumpkin",
+	pos = { x = 1, y = 6 },
+	rarity = 3,
+	cost = 10,
+	atlas = "atlastwo",
+	order = 132,
+	config = {extra = {disables = 5}},
+	blueprint_compat = true,
+	eternal_compat = false,
+	perishable_compat = false,
+	loc_vars = function(self, info_queue, center)
+		return { vars = { center.ability.extra.disables} }
+	end,
+	calculate = function(self, card, context)
+		if context.end_of_round and not context.blueprint and not context.individual and not context.repetition then
+            if G.GAME.blind:get_type() == 'Boss' then
+                card.ability.extra.disables = card.ability.extra.disables - 1
+				card:juice_up()
+                if card.ability.extra.disables <= 0 then
+                    card:start_dissolve()
+                end
+            end
+        end
+		if context.setting_blind and G.GAME.blind:get_type() == 'Boss' and not G.GAME.blind.disabled then
+			card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil, {message = localize('ph_boss_disabled')})
+			G.GAME.blind:disable()
+		end
+	end,
+	in_pool = function(self,wawa,wawa2)
+        return false
+    end,
+	cry_credits = {
+		idea = {
+			"Squiddy"
+		},
+		art = {
+			"B"
+		},
+		code = {
+			"wawa person"
+		}
+	},
+}
+local cookie = {
+	object_type = "Joker",
+	key = "clicked_cookie",
+	pos = { x = 2, y = 6 },
+	rarity = 1,
+	cost = 4,
+	atlas = "atlastwo",
+	order = 133,
+	config = {extra = {chips = 150, chip_mod = 1}},
+	blueprint_compat = true,
+	eternal_compat = false,
+	perishable_compat = false,
+	loc_vars = function(self, info_queue, center)
+		return { vars = { center.ability.extra.chips, center.ability.extra.chip_mod} }
+	end,
+	calculate = function(self, card, context)
+		if context.joker_main then
+			return{
+				card = card,
+				chip_mod = card.ability.extra.chips,
+				message = '+' .. card.ability.extra.chips,
+				colour = G.C.CHIPS
+			}
+		end
+		if context.cry_press then
+			card.ability.extra.chips = card.ability.extra.chips - card.ability.extra.chip_mod
+			card_eval_status_text(
+					card,
+					"extra",
+					nil,
+					nil,
+					nil,
+					{ message = "-" ..card.ability.extra.chip_mod , colour = G.C.CHIPS }
+				)
+		end
+	end,
+	cry_credits = {
+		idea = {
+			"playerrWon"
+		},
+		art = {
+			"lolxDdj"
+		},
+		code = {
+			"wawa person"
+		}
+	},
+}
 local necromancer = {
 	object_type = "Joker",
 	name = "cry-Necromancer",
@@ -6350,21 +6551,55 @@ local oil_lamp = { --You want it? It's yours my friend
 	cost = 10,
 	order = 127,
 	atlas = "atlastwo",
-	loc_vars = function(self, info_queue, center)
-		return { vars = { center.ability.extra.increase } }
+	loc_vars = function(self, info_queue, card)
+		card.ability.blueprint_compat_ui = card.ability.blueprint_compat_ui or ''; card.ability.blueprint_compat_check = nil
+		return { 
+			vars = { card.ability.extra.increase },
+			main_end = (card.area and card.area == G.jokers) and {
+        			{n=G.UIT.C, config={align = "bm", minh = 0.4}, nodes={
+            				{n=G.UIT.C, config={ref_table = card, align = "m", colour = G.C.JOKER_GREY, r = 0.05, padding = 0.06, func = 'blueprint_compat'}, nodes={
+                			{n=G.UIT.T, config={ref_table = card.ability, ref_value = 'blueprint_compat_ui',colour = G.C.UI.TEXT_LIGHT, scale = 0.32*0.8}},
+            				}}
+        			}}
+    			} or nil
+		}
+	end,
+	update = function(self, card, front)
+		if G.STAGE == G.STAGES.RUN then
+			for i = 1, #G.jokers.cards do
+                    		if G.jokers.cards[i] == card then other_joker = G.jokers.cards[i+1] end
+                	end
+			if other_joker and other_joker ~= card and not (Card.no(other_joker, "immutable", true)) then
+                		card.ability.blueprint_compat = 'compatible'
+            		else
+               			card.ability.blueprint_compat = 'incompatible'
+            		end
+		end
 	end,
 	calculate = function(self, card, context)
-		if context.end_of_round and not context.repetition and not context.individual then
+		if context.end_of_round and not context.repetition and not context.individual and not context.blueprint then
+			local check = false
 			for i = 1, #G.jokers.cards do
 				if G.jokers.cards[i] == card then
 					if i < #G.jokers.cards then
 						if not Card.no(G.jokers.cards[i+1], "immutable", true) then
+							check = true
 							cry_with_deck_effects(G.jokers.cards[i+1], function(cards)
 								cry_misprintize(cards, { min = card.ability.extra.increase, max = card.ability.extra.increase }, nil, true)
 							end)
 						end
 					end
 				end
+			end
+			if check then
+				card_eval_status_text(
+					card,
+					"extra",
+					nil,
+					nil,
+					nil,
+					{ message = localize("k_upgrade_ex"), colour = G.C.GREEN }
+				)
 			end
 		end
 	end,
@@ -6433,7 +6668,7 @@ local pity_prize = {
 	calculate = function(self, card, context)
 		if context.skipping_booster then
 			local tag
-			repeat 
+			repeat
 				tag = Tag(get_next_tag_key("cry_pity_prize"))
 			until tag.name ~= "Boss Tag" and tag.name ~= "Gambler's Tag" and tag.name ~= "Empowered Tag" --I saw pickle not generating boss tags because it apparently causes issues, so I did the same here
 			if tag.name == "Orbital Tag" then
@@ -6457,6 +6692,118 @@ local pity_prize = {
 		},
 		code = {
 			"Foegro"
+		}
+	},
+}
+local digitalhallucinations = {
+	object_type = "Joker",
+	name = "cry-Digital Hallucinations",
+	key = "digitalhallucinations",
+	pos = { x = 0, y = 7 },
+	order = 130,
+	config = { odds = 2 },
+	loc_vars = function(self, info_queue, card)
+		return { vars = { G.GAME and G.GAME.probabilities.normal or 1, card.ability.odds } }
+	end,
+	atlas = "atlasthree",
+	rarity = 2,
+	cost = 8,
+	blueprint_compat = true,
+	calculate = function(self, card, context)
+		
+		-- you know, i was totally ready to do something smart here but vanilla hardcodes this stuff, so i will too
+		-- some cards need to be handled slightly differently anyway, adding mod support can't really be automatic in some circumstances
+		
+		if context.open_booster and (pseudorandom("digi") < G.GAME.probabilities.normal/card.ability.odds) then
+			local boosty = context.card
+			local consums = {'Arcana', 'Celestial', 'Spectral'}
+			local short1 = {'tarot', 'planet', 'spectral'}
+			local short2 = {'Tarot', 'Planet', 'Spectral'}
+			for i = 1, #consums do
+				if boosty.ability.name:find(consums[i]) then
+					G.E_MANAGER:add_event(Event({
+						trigger = 'before',
+						delay = 0.0,
+						func = (function()
+							local ccard = create_card(short2[i], G.consumables, nil, nil, nil, nil, nil, "diha")
+							ccard:set_edition({ negative = true }, true)
+							ccard:add_to_deck()
+							G.consumeables:emplace(ccard)
+							return true
+						end)
+					}))
+					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil, {message = localize('k_plus_'..short1[i]), colour = G.C.SECONDARY_SET[short2[i]]})
+					return true	-- this triggers BEFORE a retrigger joker and looks like jank. i can't get a message showing up without status text so this is the best option rn
+				end
+			end
+			if boosty.ability.name:find('code') then
+				G.E_MANAGER:add_event(Event({
+					trigger = 'before',
+					delay = 0.0,
+					func = function()
+						local ccard = create_card("Code", G.consumables, nil, nil, nil, nil, nil, "diha")
+						ccard:set_edition({ negative = true }, true)
+						ccard:add_to_deck()
+						G.consumeables:emplace(ccard)
+						return true
+					end
+				}))
+				card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil, {message = localize('cry_plus_code'), colour = G.C.SET.Code})
+				return true
+			end
+			if boosty.ability.name:find('Buffoon') then
+				G.E_MANAGER:add_event(Event({
+					trigger = 'before',
+					delay = 0.0,
+					func = function()
+						local ccard = create_card("Joker", G.jokers, nil, nil, nil, nil, nil, "diha")
+						ccard:set_edition({ negative = true }, true)
+						ccard:add_to_deck()
+						G.jokers:emplace(ccard)
+						ccard:start_materialize()
+						return true
+					end
+				}))
+				card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil, {message = localize('k_plus_joker'), colour = G.C.FILTER})
+				return true
+			end
+			if boosty.ability.name:find('Standard') then
+				G.E_MANAGER:add_event(Event({
+					func = function() 
+						local front = pseudorandom_element(G.P_CARDS, pseudoseed('diha_p'))
+						G.playing_card = (G.playing_card and G.playing_card + 1) or 1
+						local ccard = Card(G.play.T.x + G.play.T.w/2, G.play.T.y, G.CARD_W, G.CARD_H, front, G.P_CENTERS.c_base, {playing_card = G.playing_card})
+						ccard:set_edition({ negative = true }, true)
+						ccard:start_materialize({G.C.SECONDARY_SET.Enhanced})
+						G.play:emplace(ccard)
+						table.insert(G.playing_cards, ccard)
+						return true
+					end
+				}))
+				card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil, {message = localize('cry_plus_card'), colour = G.C.FILTER})
+
+				G.E_MANAGER:add_event(Event({
+					func = function() 
+						G.deck.config.card_limit = G.deck.config.card_limit + 1
+						return true
+					end
+				}))
+				draw_card(G.play,G.deck, 90,'up', nil)  
+
+				playing_card_joker_effects({true})	-- who knows what most this stuff does, i just copied it from marble jonkler
+				return true
+			end
+		end
+	end,
+	cry_credits = {
+		idea = {
+			"lolxddj"
+		},
+		art = {
+			"lolxddj"
+		},
+		code = {
+			"toneblock"
 		}
 	},
 }
@@ -6549,10 +6896,14 @@ local miscitems =  {
 	exposed,
 	mask,
 	tropical_smoothie,
+	pumpkin,
+	carved_pumpkin,
+	cookie,
 	necromancer,
 	oil_lamp,
 	tax_fraud,
 	pity_prize,
+	digitalhallucinations,
 }
 if Cryptid.enabled["Misc."] then
 	miscitems[#miscitems+1] = flipside
@@ -6660,6 +7011,26 @@ return {
 				elseif obj.pos.y < 6 then
 					obj.pos.x = 0
 					obj.pos.y = obj.pos.y + 1
+				end
+			end
+		end
+
+		local oldfunc = Card.start_dissolve
+		function Card:start_dissolve(dissolve_colours, silent, dissolve_time_fac, no_juice)
+			if G and G.jokers and G.jokers.cards then
+				for i = 1, #G.jokers.cards do
+					G.jokers.cards[i]:calculate_joker({cry_start_dissolving = true, card = self})
+				end
+			end
+			return oldfunc(self,dissolve_colours, silent, dissolve_time_fac, no_juice)
+		end
+
+		local lcpref = Controller.L_cursor_press
+		function Controller:L_cursor_press(x, y)
+			lcpref(self,x,y)
+			if G and G.jokers and G.jokers.cards and not G.SETTINGS.paused then
+				for i = 1, #G.jokers.cards do
+					G.jokers.cards[i]:calculate_joker({cry_press = true})
 				end
 			end
 		end

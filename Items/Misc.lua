@@ -212,7 +212,7 @@ local oversat = {
 	end,
 	on_remove = function(card)
 		cry_with_deck_effects(card, function(card)
-			cry_misprintize(card, nil, true)
+			cry_misprintize(card, {min = 1, max = 1}, true) -- 
 			cry_misprintize(card)
 		end)
 	end,
@@ -306,8 +306,8 @@ local glitched = {
 	end,
 	on_remove = function(card)
 		cry_with_deck_effects(card, function(card)
-			cry_misprintize(card, nil, true)
-			cry_misprintize(card)
+			cry_misprintize(card, {min = 1, max = 1}, true)
+			cry_misprintize(card) -- Correct me if i'm wrong but this is for misprint deck. or atleast it is after this patch
 		end)
 	end,
 }
@@ -969,10 +969,10 @@ local eclipse = {
 	pos = { x = 4, y = 0 },
 	config = { mod_conv = "m_cry_echo", max_highlighted = 1 },
 	atlas = "atlasnotjokers",
-	loc_vars = function(self, info_queue)
+	loc_vars = function(self, info_queue, card)
 		info_queue[#info_queue + 1] = G.P_CENTERS.m_cry_echo
 
-		return { vars = { self.config.max_highlighted } }
+		return { vars = { card and card.ability.max_highlighted or self.config.max_highlighted } }
 	end,
 }
 local blessing = {
@@ -996,7 +996,7 @@ local blessing = {
 			func = function()
 				if G.consumeables.config.card_limit > #G.consumeables.cards then
 					play_sound("timpani")
-					local forced_key = get_random_consumable("blessing")
+					local forced_key = get_random_consumable("blessing", nil, "c_cry_blessing")
 					local _card = create_card("Consumeables", G.consumables, nil, nil, nil, nil, forced_key.config.center_key, "blessing")
 					_card:add_to_deck()
 					G.consumeables:emplace(_card)
@@ -1119,11 +1119,18 @@ local meld = {
 	cost = 4,
 	atlas = "atlasnotjokers",
 	can_use = function(self, card)
-		if #G.jokers.highlighted
-				+ #G.hand.highlighted
-				- (G.hand.highlighted[1] and G.hand.highlighted[1] == self and 1 or 0)
-			== 1 then
-			if #G.jokers.highlighted == 1 and Card.no(G.jokers.highlighted[1], "dbl") then return false end
+		if #G.jokers.highlighted + #G.hand.highlighted - (G.hand.highlighted[1] and G.hand.highlighted[1] == self and 1 or 0) == 1 then
+			if 
+				#G.jokers.highlighted == 1 and 
+				(
+					Card.no(G.jokers.highlighted[1], "dbl") 
+					or G.jokers.highlighted[1].edition
+				) 
+			then return false end
+			if 
+				#G.hand.highlighted == 1 
+				and G.hand.highlighted[1].edition 
+			then return false end
 			return true
 		end
 	end,
@@ -1486,6 +1493,22 @@ local universe = {
     end,
     generate_ui = 0,
 }
+local absolute = {
+	object_type = "Sticker",
+	badge_colour = HEX('c75985'),
+	prefix_config = { key = false },
+	key = "cry_absolute",
+	atlas = "sticker",
+	pos = { x = 1, y = 5 },
+	should_apply = false,
+	no_sticker_sheet = true,
+	draw = function(self, card, layer)
+		G.shared_stickers["cry_absolute"].role.draw_major = card
+		G.shared_stickers["cry_absolute"]:draw_shader('dissolve', nil, nil, nil, card.children.center)
+		G.shared_stickers["cry_absolute"]:draw_shader('polychrome', nil, card.ARGS.send_to_shader, nil, card.children.center)
+		G.shared_stickers["cry_absolute"]:draw_shader('voucher', nil, card.ARGS.send_to_shader, nil, card.children.center)
+	end,
+}
 local miscitems = {
 	memepack_atlas,
   	meme_object_type,
@@ -1523,6 +1546,7 @@ local miscitems = {
 	void,
 	marsmoons,
 	universe,
+	absolute,
 }
 if Cryptid.enabled["M Jokers"] then
 	miscitems[#miscitems + 1] = jollyeditionshader
@@ -1801,6 +1825,13 @@ return {
 					self.flipping = "b2f"
 				end
 				self:dbl_side_flip()
+			end
+			if self.ability.cry_absolute then	-- feedback loop... may be problematic
+				self.cry_absolute = true
+			end
+			if self.cry_absolute then
+				self.ability.cry_absolute = true
+				self.ability.eternal = true
 			end
 		end
 		function copy_dbl_card(C, c, deck_effects)

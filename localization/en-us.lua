@@ -844,6 +844,14 @@ return {
                     "an {C:attention}#2#",
                 },
             },
+	    j_cry_clicked_cookie = {
+                name = "Clicked Cookie",
+                text = {
+                    "{C:chips}+#1#{} Chips",
+                    "{C:chips}-#2#{} Chips when",
+                    "you {C:attention}click",
+                },
+            },
             j_cry_CodeJoker = {
                 name = "Code Joker",
                 text = {
@@ -943,6 +951,15 @@ return {
                     "a {C:attention}#2#"
                 }
             },
+            j_cry_digitalhallucinations = {
+                name = "Digital Hallucinations",
+                text = {
+                    "When a {C:attention}Booster Pack{} is opened,",
+                    "{C:green}#1# in #2#{} chance to create",
+                    "a random {C:dark_edition}Negative{} card",
+                    "corresponding to its {C:attention}type{}",
+                },
+            },
             j_cry_discreet = {
                 name = "Discreet Joker",
                 text = {
@@ -960,7 +977,7 @@ return {
                     "for each {C:attention}Jolly Joker{}",
                 },
             },
-            ["j_cry_Double Scale"] = {
+            ["j_cry_Double Scale"] = {	-- ?????????????
                 name = "Double Scale",
                 text = {
                     "Scaling {C:attention}Jokers{}",
@@ -1681,12 +1698,13 @@ return {
                     "{C:inactive}(Currently {X:chips,C:white} X#1# {C:inactive} Chips)",
                 },
             },
-			j_cry_pity_prize = {
-				name = "Pity Prize",
-				text = {
-					"When you skip a {C:attention}Booster Pack{} gain a random {C:attention}Tag{}"
-				},
-			},
+            j_cry_pity_prize = {
+                name = "Pity Prize",
+                text = {
+                    "On skipping a {C:attention}Booster Pack{},",
+                    "gain a random {C:attention}Tag{}",
+                },
+            },
             j_cry_pot_of_jokes = {
                 name = "Pot of Jokes",
                 text = {
@@ -1702,6 +1720,23 @@ return {
                     "if all cards in played hand are",
                     "{C:attention}Aces{}, {C:attention}2s{}, {C:attention}3s{}, {C:attention}5s{}, or {C:attention}7s{}",
                     "{C:inactive}(Currently {X:dark_edition,C:white} ^#2# {C:inactive} Mult)",
+                },
+            },
+	    j_cry_pumpkin = {
+                name = "Pumpkin",
+                text = {
+                    "Prevents Death if chips scored",
+                    "are atleast {C:attention}50%{} of required chips",
+                    "{C:attention}Turns into Carved Pumpkin",
+                    "{C:attention}when{} {C:red}destroyed"
+                },
+            },
+            j_cry_carved_pumpkin = {
+                name = "Carved Pumpkin",
+                text = {
+                    "The next {C:attention}#1#{} Boss Blinds",
+                    'will have their abilities',
+                    '{C:attention}disabled'
                 },
             },
             j_cry_python = {
@@ -2258,6 +2293,15 @@ return {
                     "{C:attention}#2#",
                     "{C:mult}+#3#{} Mult and",
                     "{C:chips}+#4#{} chips"
+                }
+            },
+	    c_cry_sunplanet = {
+                name = 'Sol',
+                text = {
+                    "{S:0.8}({S:0.8,V:1}lvl.#1#{S:0.8}){}",
+                    "Increase power of",
+		    "{C:attention}Ascended{} hands by {X:gold,C:white}0.05{}",
+		    "{C:inactive}(Currently {X:gold,C:white}X(#2#^asc){C:inactive})"
                 }
             },
         },
@@ -3134,7 +3178,8 @@ return {
                 name = "Hyperspace Tether",
                 text = {
                     "{C:attention}+#1#{} card selection limit",
-                    "{C:inactive,s:0.7}NOTE: Will have extra functionality later{}",
+                    "All selected cards contribute power",
+                    "to {C:attention}Ascended Hands{}",
                 },
             },
         },
@@ -3144,6 +3189,14 @@ return {
                 text = {
                     "{C:green}#1# in #2#{} chance of being",
                     "destroyed each round",
+                },
+            },
+            cry_absolute = {
+                name = "Absolute",
+                text = {
+                    "Can't be sold",
+                    "or destroyed",
+                    "{C:attention}Unremovable{}",
                 },
             },
             cry_rigged = {
@@ -3502,7 +3555,7 @@ return {
             blurred_sdm0 = {
                 name = "a",
                 text = {
-                    "{C:inactive,s:0.8}\"I hate this card\" - SDM0, 2024{}",
+                    "{C:inactive,s:0.8}\"I hate this card\" - SDM_0, 2024{}",
                 },
             },
         },
@@ -3678,6 +3731,9 @@ return {
             cry_hand_clusterfuck = "Clusterfuck",
             cry_hand_ultpair = "Ultimate Pair",
 
+            cry_asc_hands = "Asc. Hands",
+            cry_p_star = "Star",
+
             cry_again_q = "Again?",
             cry_curse = "Curse",
             cry_curse_ex = "Curse!",
@@ -3692,6 +3748,8 @@ return {
             cry_m_ex = "M!",
             cry_minus_round = "-1 Round",
             cry_plus_cryptid = "+1 Cryptid",
+            cry_plus_card = "+1 Card",
+            cry_plus_code = "+1 Code",
             cry_no_triggers = "No triggers left!",
             cry_unredeemed = "Unredeemed...",
             cry_active = "Active",
@@ -3716,6 +3774,7 @@ return {
         labels = {
             food_jokers = "Food Jokers",
             banana = "Banana",
+            cry_absolute = "Absolute",
             code = "Code",
             unique = "Unique",
             cry_rigged = "Rigged",
