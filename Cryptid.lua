@@ -5,9 +5,9 @@
 --- MOD_AUTHOR: [MathIsFun_, Cryptid and Balatro Discords]
 --- MOD_DESCRIPTION: Adds unbalanced ideas to Balatro.
 --- BADGE_COLOUR: 708b91
---- DEPENDENCIES: [Talisman>=2.0.0-beta8, Steamodded>=1.0.0~ALPHA-1225a]
---- VERSION: 0.5.3a
---- PRIORITY: 99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
+--- DEPENDENCIES: [Talisman>=2.0.0-beta8<=2.0.9, Steamodded>=1.0.0~ALPHA-1225a<=1.0.0~ALPHA-1304a]
+--- VERSION: 0.5.3c
+--- PRIORITY: 2147483647
 
 ----------------------------------------------
 ------------MOD CODE -------------------------
@@ -40,7 +40,7 @@ SMODS.Rarity{
 SMODS.Rarity{
     key = "epic",
     loc_txt = {},
-    badge_colour = HEX('571d91'),
+    badge_colour = HEX('ef0098'),
     default_weight = 0.003,
     pools = {["Joker"] = true},
     get_weight = function(self, weight, object_type)
@@ -56,7 +56,7 @@ SMODS.Rarity{
 SMODS.Rarity{
     key = "candy",
     loc_txt = {},
-    badge_colour = HEX("e91ff0"),
+    badge_colour = HEX("e275e6"),
 }
 
 SMODS.Rarity{
@@ -386,6 +386,44 @@ end
 function cry_edition_to_table(edition) -- look mom i figured it out (this does NOT need to be a function)
 	if edition then
 		return { [edition] = true }
+	end
+end
+
+-- just dumping this garbage here
+-- this just ensures that extra voucher slots work as expected
+function cry_bonusvouchermod(mod)
+	if not G.GAME.shop then return end
+	G.GAME.cry_bonusvouchercount = G.GAME.cry_bonusvouchercount + mod
+	if G.shop_jokers and G.shop_jokers.cards then
+		G.shop:recalculate()
+		if mod > 0 then		-- not doing minus mod because it'd be janky and who really cares
+			for i = 1, G.GAME.cry_bonusvouchercount+1 - #G.shop_vouchers.cards do
+				local curr_bonus = G.GAME.current_round.cry_bonusvouchers
+				curr_bonus[#curr_bonus+1] = get_next_voucher_key()
+				
+				
+				-- this could be a function but it's done like what... 3 times? it doesn't matter rn
+				
+				local card = Card(G.shop_vouchers.T.x + G.shop_vouchers.T.w/2,
+					G.shop_vouchers.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS[curr_bonus[#curr_bonus]],{bypass_discovery_center = true, bypass_discovery_ui = true})
+				card.shop_cry_bonusvoucher = #curr_bonus
+				cry_misprintize(card)
+				if G.GAME.events.ev_cry_choco2 then
+					card.misprint_cost_fac = (card.misprint_cost_fac or 1) * 2
+					card:set_cost()
+				end
+				if G.GAME.modifiers.cry_enable_flipped_in_shop and pseudorandom('cry_flip_vouch'..G.GAME.round_resets.ante) > 0.7 then
+					card.cry_flipped = true
+				end
+				create_shop_card_ui(card, 'Voucher', G.shop_vouchers)
+				card:start_materialize()
+				if G.GAME.current_round.cry_voucher_edition then
+					card:set_edition(G.GAME.current_round.cry_voucher_edition, true, true)
+				end
+				G.shop_vouchers.config.card_limit = G.shop_vouchers.config.card_limit + 1
+				G.shop_vouchers:emplace(card)
+			end
+		end
 	end
 end
 
@@ -1137,7 +1175,9 @@ function Card:calculate_joker(context)
 	if active_side.ability.cry_rigged then
 		G.GAME.probabilities.normal = ggpn
 	end
+	
 	active_side:cry_double_scale_calc(orig_ability, in_context_scaling)
+	
 	--Calculate events
 	if self == G.jokers.cards[#G.jokers.cards] then
 		for k, v in pairs(SMODS.Events) do
@@ -2004,12 +2044,26 @@ function create_card(_type, area, legendary, _rarity, skip_materialize, soulable
 
 		center = G.P_CENTERS[center]
 	end
-
+	
+	
+	
+	-- handle banned keys for playing cards
+	-- can cache this if it's too much of a performance hit
+	local _cardlist = {}
+	for k, v in pairs(G.P_CARDS) do
+		local add = true
+		if G.GAME and G.GAME.cry_banned_pcards and G.GAME.cry_banned_pcards[k] then
+			add = false
+		end
+		if add then _cardlist[#_cardlist+1] = k end
+	end
+	if #_cardlist <= 0 then _cardlist[#_cardlist+1] = 'S_A' end
+	
 	local front = (
 		(_type == "Base" or _type == "Enhanced")
-		and pseudorandom_element(G.P_CARDS, ps("front" .. (key_append or "") .. G.GAME.round_resets.ante))
+		and G.P_CARDS[pseudorandom_element(_cardlist, ps("front" .. (key_append or "") .. G.GAME.round_resets.ante))]
 	) or nil
-
+	
 	if area == "ERROR" then
 		local ret = (front or center)
 		if not ret.config then
@@ -2212,7 +2266,8 @@ function create_card(_type, area, legendary, _rarity, skip_materialize, soulable
 				end
 			end
 			if
-				G.GAME.modifiers.cry_enable_flipped_in_shop
+				not card.ability.eternal
+				and G.GAME.modifiers.cry_enable_flipped_in_shop
 				and pseudorandom("cry_flip" .. (key_append or "") .. G.GAME.round_resets.ante) > 0.7
 			then
 				card.cry_flipped = true
@@ -2244,6 +2299,11 @@ function create_card(_type, area, legendary, _rarity, skip_materialize, soulable
 	end
 	if not (card.edition and (card.edition.cry_oversat or card.edition.cry_glitched)) then
 		cry_misprintize(card)
+	end
+	if _type == "Joker" and G.GAME.modifiers.cry_common_value_quad then
+		if card.config.center.rarity == 1 then
+			cry_misprintize(card,{min = 4, max = 4}, nil, true)
+		end
 	end
 	if card.ability.consumeable and card.pinned then -- counterpart is in Sticker.toml
 		G.GAME.cry_pinned_consumeables = G.GAME.cry_pinned_consumeables + 0
@@ -2687,11 +2747,11 @@ function G.FUNCS.get_poker_hand_info(_cards)
 		['Pair'] = G.GAME.used_vouchers.v_cry_hyperspacetether and 2 or nil,
 		['Two Pair'] = 4,
 		['Three of a Kind'] = G.GAME.used_vouchers.v_cry_hyperspacetether and 3 or nil,
-		['Straight'] = 5,
-		['Flush'] = 5,
+		['Straight'] = next(SMODS.find_card('j_four_fingers')) and 4 or 5,
+		['Flush'] = next(SMODS.find_card('j_four_fingers')) and 4 or 5,
 		['Full House'] = 5,
 		['Four of a Kind'] = G.GAME.used_vouchers.v_cry_hyperspacetether and 4 or nil,
-		['Straight Flush'] = 5,
+		['Straight Flush'] = next(SMODS.find_card('j_four_fingers')) and 4 or 5,	-- debatable
 		['cry_Bulwark'] = 5,
 		['Five of a Kind'] = 5,
 		['Flush House'] = 5,
