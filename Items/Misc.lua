@@ -1015,6 +1015,55 @@ local seraph = {
 		return { vars = { self.config.max_highlighted } }
 	end,
 }
+local glowing = {
+	object_type = "Enhancement",
+	key = "glowing",
+	atlas = "cry_misc",
+	pos = { x = 0, y = 3 },
+	config = {extra = {multiplier = 1.5 }},
+	loc_vars = function(self, info_queue, card)
+		return { vars = { card and card.ability.extra.multiplier or self.config.extra.multiplier } }
+	end,
+	calculate = function(self,card,context,effect)
+		if context.before and context.cardarea == G.play and not context.repetition then
+			for i = 1, #context.full_hand do
+				local card2 = context.full_hand[i]
+				if context.full_hand[i] ~= card then
+					if not card2.no(context.full_hand[i], "immutable", true) then
+						cry_with_deck_effects(context.full_hand[i], function(card2)
+							cry_misprintize(card2, { min = card.ability.extra.multiplier , max = card.ability.extra.multiplier }, nil, true)
+						end)
+						check = true
+					end
+				if check then
+				card_eval_status_text(
+					card2,
+					"extra",
+					nil,
+					nil,
+					nil,
+					{ message = localize("k_upgrade_ex"), colour = G.C.GREEN }
+				)
+				end
+			end
+		end
+	end,
+}
+local seraph = { 
+	object_type = "Consumable",
+	set = "Tarot",
+	name = "cry-Seraph",
+	key = "seraph",
+	order = 2,
+	pos = { x = 1, y = 2 },
+	config = { mod_conv = "m_cry_light", max_highlighted = 2 },
+	atlas = "placeholders",
+	loc_vars = function(self, info_queue)
+		info_queue[#info_queue + 1] = G.P_CENTERS.m_cry_light
+
+		return { vars = { self.config.max_highlighted } }
+	end,
+}
 local blessing = {
 	object_type = "Consumable",
 	set = "Tarot",
@@ -1048,6 +1097,8 @@ local blessing = {
 		delay(0.6)
 	end,
 }
+
+
 local azure_seal = {
 	object_type = "Seal",
 	name = "cry-Azure-Seal",
